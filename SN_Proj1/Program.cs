@@ -6,6 +6,9 @@ using Encog.Neural.Networks.Training.Propagation.Resilient;
 using Encog.ML.Train;
 using Encog.ML.Data.Basic;
 using Encog;using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Encog.Neural.Networks.Training.Propagation.Back;
 using Encog.Util.CSV;
 using Encog.Neural.Data.Basic;
@@ -15,21 +18,23 @@ using Encog.ML.Data.Versatile.Columns;
 using Encog.ML.Data.Versatile.Normalizers.Strategy;
 using Encog.ML.Model;
 using Encog.ML.Factory;
+using Encog.Util.Arrayutil;
+using Encog.Util.Normalize.Output.Nominal;
 using Encog.Util.Simple;
 
 namespace SN_Proj1
 {
     class Program
     {
-        private static int LAYERS = 10;
+        private static int LAYERS = 4;
         private static int NEURONS = 30;
         private static int ITERATIONS = 100;
-        private static double LEARNING_RATE = 0.7;
-        private static double MOMENTUM = 0;
+        private static double LEARNING_RATE = 0.2;
+        private static double MOMENTUM = 0.2;
 
         static void Main(string[] args)
         {
-            var trainingSet = readCSV();
+            var trainingSet = readCSV("data.xsq.train.csv");
 
             var network = new BasicNetwork();
             network.AddLayer(new BasicLayer(1));
@@ -43,7 +48,7 @@ namespace SN_Proj1
             network.Structure.FinalizeStructure();
             network.Reset();
 
-            var train = new Backpropagation(network, trainingSet, LEARNING_RATE, MOMENTUM);
+            var train = new Backpropagation(network, trainingSet);
 
             int epoch = 1;
             do
@@ -51,57 +56,85 @@ namespace SN_Proj1
                 train.Iteration();
                 Console.WriteLine(@"Epoch #" + epoch + @" Error: " + train.Error);
                 epoch++;
-            } while (train.Error > 0.01);
+            } while (train.Error > 0.004);
             train.FinishTraining();
 
             Console.ReadKey();
         }
 
-        private static IMLDataSet readCSV()
+
+
+
+
+        private static double[] ReadLine(ReadCSV csv)
         {
-            var reader = new ReadCSV("data.xsq.train.csv", true, CSVFormat.DecimalPoint);
-
-            double[][] input = new double[1000][];
-            double[][] ideal = new double[1000][];
-
-            int line = 0;
-
-            
-            while (reader.Next())
+            var line = new double[csv.GetCount()];
+            for (int i = 0; i < csv.GetCount(); i++)
             {
-                int inputSize = reader.GetCount() - 1;
-                input[line] = new double[inputSize];
-                for (int i = 0; i < inputSize; ++i)
-                {
-                    input[line][i] = reader.GetDouble(i) / 1000;                   
-                }
-                ideal[line] = new double[1];
-                ideal[line][0] = reader.GetDouble(inputSize) / 1000;
+                line[i] = csv.GetDouble(i);
+            }
+            return line;
+        }
 
-                ++line;
+
+        private static double[][] LoadCSV(ReadCSV csvReader)
+        {
+            if (csvReader == null)
+            {
+                throw new ArgumentNullException(nameof(csvReader));
             }
 
-            var dataSet = new BasicNeuralDataSet(input, ideal);
+            IList<double[]> data = new List<double[]>();
+
+            while (csvReader.Next())
+            {
+                data.Add(ReadLine(csvReader));
+            }
+            return data.ToArray();
+        }
+
+        private static IMLDataSet readCSV(string path)
+        {
+            var reader = new ReadCSV(path, true, CSVFormat.DecimalPoint);
+            var data = LoadCSV(reader);
+            data = Normalize(data);
             reader.Close();
-            return dataSet;
-/*
-            var source = new CSVDataSource("data.xsq.train.csv", true, CSVFormat.DecimalPoint);
-            var data = new VersatileMLDataSet(source);
-            
 
-            data.DefineSourceColumn("x", ColumnType.Continuous);
-            ColumnDefinition output = data.DefineSourceColumn("y", ColumnType.Nominal);          
+            var input = data.Select(row => row.Take(row.Length - 1).ToArray()).ToArray();
+            var ideal = data.Select(row => row.Skip(row.Length - 1).ToArray()).ToArray(); // last value
 
-            data.Analyze();
+            return new BasicNeuralDataSet(input, ideal);
+        }
 
-            data.DefineSingleOutputOthersInput(output);
-            EncogModel model = new EncogModel(data);
-            model.SelectMethod(data, MLMethodFactory.TypeFeedforward);
 
-            data.Normalize();
+        private static double[][] Normalize(double[][] data)
+        {
+            //TODO: trzeba napisać własny normalizator tak, żebu dało się odwrócić jego dziłanie
+            //https://s3.amazonaws.com/heatonresearch-books/free/Encog3CS-User.pdf strona 22
 
-            return data;
-            */          
+            var rows = data.Length;
+            var colums = data[0].Length;
+
+            var tmp = data.SelectMany(x => x.ToArray()).ToArray();
+
+            var norm = new NormalizeArray { NormalizedHigh = 1, NormalizedLow = -1 };
+            var afterNormalize = norm.Process(tmp);
+
+            double[][] result = new double[rows][];
+
+            for (int i = 0; i < rows; i++)
+            {
+                result[i] = new double[colums];
+
+                for (int j = 0; j < colums; j++)
+                {
+                    result[i][j] = afterNormalize[i * colums + j];
+                }
+            }
+
+
+            return result;
+
         }
     }
 }
