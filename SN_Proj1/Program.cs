@@ -12,6 +12,12 @@ namespace SN_Proj1
     {
         static void Main(string[] args)
         {
+
+            new GnuplotScriptRunner(GnuplotScriptRunner.RegressionScriptPath)
+                .AddScriptParameter("trainingSet",
+                    @"C:\Users\wardzinskim\Downloads\Regression\data.square.test.1000.csv")
+                .AddScriptParameter("testSet", @"C:\Users\wardzinskim\Downloads\Regression\data.square.test.100.csv")
+                .Run();
         }
     }
 }
