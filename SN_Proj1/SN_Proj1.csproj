@@ -47,7 +47,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CsvHelper.cs" />
+    <Compile Include="DataNormalizer.cs" />
     <Compile Include="GnuplotScriptRunner.cs" />
+    <Compile Include="NeuralSettings.cs" />
+    <Compile Include="NeuralWrapper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
