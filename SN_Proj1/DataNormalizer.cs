@@ -57,7 +57,7 @@ namespace SN_Proj1
             {
                 var rowList = new List<double>();
                 var rowItemIndex = 0;
-                for (; rowItemIndex < row.Count() || rowItemIndex < columns.Length; rowItemIndex++)
+                for (; rowItemIndex < row.Count() && rowItemIndex < columns.Length; rowItemIndex++)
                 {
                     rowList.Add(Normalize(row[rowItemIndex], columns[rowItemIndex]));
                 }
@@ -75,7 +75,7 @@ namespace SN_Proj1
         {
             var result = new List<double>();
             var rowItemIndex = 0;
-            for (; rowItemIndex < input.Count() || rowItemIndex < columns.Length; rowItemIndex++)
+            for (; rowItemIndex < input.Count() && rowItemIndex < columns.Length; rowItemIndex++)
             {
                 result.Add(Denormalize(input[rowItemIndex], columns[rowItemIndex]));
             }

@@ -16,29 +16,29 @@ namespace SN_Proj1
 {
     class Program
     {
-        private static String FILENAME = "data.xsq.train.csv";
-        private static String TEST_FILENAME = "data.xsq.test.csv";
+        private static String FILENAME = "data.square.train.10000.csv";
+        private static String TEST_FILENAME = "data.square.test.10000.csv";
 
         static void Main(string[] args)
         {
             var trainingData = CsvHelper.Read(FILENAME);
-            var testData = CsvHelper.Read(TEST_FILENAME);
-
+            var validationData = CsvHelper.Read(TEST_FILENAME);
+            var testData = validationData.Select(x => x.Take(1).ToArray()).ToArray();
 
             var settings = new NeuralSettings
             {
                 HasBias = true,
                 ActivationFunction = ActivationFunction.Unipolar,
-                HiddenLayers = new[] { 20, 10 },
+                HiddenLayers = new[] { 40, 30 },
                 LearningRate = 0.003,
-                Momentum = 0.3,
-                Iterations = 5000,
+                Momentum = 0.03,
+                Iterations = 2000,
                 Type = ProblemType.Regression
             };
 
             var neuralWrapper = new NeuralWrapper(settings, 1, 1);
             neuralWrapper.BuildNetwork();
-            neuralWrapper.Train(trainingData);
+            var error = neuralWrapper.Train(trainingData, validationData);
 
 
             var result = neuralWrapper.Test(testData);
@@ -46,11 +46,16 @@ namespace SN_Proj1
 
             CsvHelper.Write("sortedInput.csv", SortByColumn(trainingData, 0));
             CsvHelper.Write("output.csv", testData, result);
+            CsvHelper.Write("error.csv", error);
 
 
             new GnuplotScriptRunner(@"gnuplot/regression.gnu")
                 .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
                 .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
+                .Run();
+
+            new GnuplotScriptRunner(@"gnuplot/networkError.gnu")
+                .AddScriptParameter("input", Path.GetFullPath("error.csv"))
                 .Run();
 
         }

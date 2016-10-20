@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.XPath;
 using Encog.Engine.Network.Activation;
+using Encog.MathUtil.Error;
 using Encog.ML.Data;
 using Encog.Neural.Data.Basic;
 using Encog.Neural.Networks;
@@ -66,19 +67,43 @@ namespace SN_Proj1
             return null;
         }
 
-        public void Train(double[][] data)
+        public double[][] Train(double[][] trainingData, double[][] validationData)
         {
-            var trainingSet = PrepareTrainingSet(data);
+            var error = new List<double[]>();
+
+            var trainingSet = PrepareSet(trainingData);
+            var validationSet = PrepareSet(validationData);
 
             var training = new Backpropagation(_network, trainingSet, _settings.LearningRate, _settings.Momentum);
 
             for (int epoch = 0; epoch < _settings.Iterations; epoch++)
             {
                 training.Iteration();
-                Console.WriteLine(@"Epoch #" + epoch + @" Error: " + training.Error);
+                var errorIter = new[] { epoch, _network.CalculateError(trainingSet), _network.CalculateError(validationSet) };
+                error.Add(errorIter);
+                Console.WriteLine($"Epoch #{epoch} TrainingError: {errorIter[1]} ValidationError: {errorIter[2]}");
             }
             training.FinishTraining();
+
+            return error.ToArray();
         }
+
+        private Tuple<double[][], double[][]> Split(double[][] data, double percent)
+        {
+            var rnd = new Random();
+
+            var columns = Enumerable.Range(0, data.Length)
+                .Select(x => new
+                {
+                    Index = rnd.Next(),
+                    Value = x
+                }).OrderBy(x => x.Index).Take((int)(data.Length * percent)).Select(x => x.Value).ToArray();
+
+            var learningSet = data.Where((row, index) => !columns.Contains(index)).ToArray();
+            var validationSet = data.Where((row, index) => columns.Contains(index)).ToArray();
+            return new Tuple<double[][], double[][]>(learningSet, validationSet);
+        }
+
 
         public double[][] Test(double[][] testData)
         {
@@ -96,7 +121,7 @@ namespace SN_Proj1
         }
 
 
-        private BasicNeuralDataSet PrepareTrainingSet(double[][] data)
+        private BasicNeuralDataSet PrepareSet(double[][] data)
         {
             _normalizer = new DataNormalizer(data, 1, _settings.ActivationFunction == ActivationFunction.Unipolar ? 0 : -1);
 
