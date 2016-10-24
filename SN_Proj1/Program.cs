@@ -1,48 +1,43 @@
-﻿using Encog.Neural.Networks;
-using Encog.Neural.Networks.Layers;
-using Encog.Engine.Network.Activation;
-using Encog.ML.Data;using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Linq;
-using Encog.ML.EA.Train;
-using Encog.Neural.Networks.Training.Propagation.Back;
-using Encog.Util.CSV;
-using Encog.Neural.Data.Basic;
-using Encog.Util.Arrayutil;
-using Encog.Util;
 
 namespace SN_Proj1
 {
     class Program
     {
-        private static String FILENAME = "data.square.train.10000.csv";
-        private static String TEST_FILENAME = "data.square.test.10000.csv";
+        private static String FILENAME = "Classification/data.simple.train.100.csv";
+        private static String TEST_FILENAME = "Classification/data.simple.test.100.csv";
+
+        private static int CLUSTERS_COUNT = 0;
 
         static void Main(string[] args)
         {
             var trainingData = CsvHelper.Read(FILENAME);
             var validationData = CsvHelper.Read(TEST_FILENAME);
-            var testData = validationData.Select(x => x.Take(1).ToArray()).ToArray();
 
             var settings = new NeuralSettings
             {
                 HasBias = true,
-                ActivationFunction = ActivationFunction.Unipolar,
+                ActivationFunction = ActivationFunction.Bipolar,
                 HiddenLayers = new[] { 40, 30 },
                 LearningRate = 0.003,
                 Momentum = 0.03,
-                Iterations = 2000,
-                Type = ProblemType.Regression
+                Iterations = 200,
+                Type = ProblemType.Classification
             };
 
-            var neuralWrapper = new NeuralWrapper(settings, 1, 1);
+            // Zakładamy, że liczba elementów w każdej kolumnie jest taka sama i że w ostatniej kolumnie
+            // znajduje się wynik
+            int inputSize = trainingData[0].Length - 1;
+            int idealSize = settings.Type == ProblemType.Regression ? 1 : CLUSTERS_COUNT;
+
+            var testData = validationData.Select(x => x.Take(2).ToArray()).ToArray();
+            var neuralWrapper = new NeuralWrapper(settings, inputSize, idealSize);
             neuralWrapper.BuildNetwork();
             var error = neuralWrapper.Train(trainingData, validationData);
 
-
             var result = neuralWrapper.Test(testData);
-
 
             CsvHelper.Write("sortedInput.csv", SortByColumn(trainingData, 0));
             CsvHelper.Write("output.csv", testData, result);
@@ -58,7 +53,9 @@ namespace SN_Proj1
                 .AddScriptParameter("input", Path.GetFullPath("error.csv"))
                 .Run();
 
+            Console.ReadLine();
         }
+
         public static double[][] SortByColumn(double[][] data, int column)
         {
             if (data == null)
