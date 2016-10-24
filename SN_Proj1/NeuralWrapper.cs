@@ -62,7 +62,7 @@ namespace SN_Proj1
                 case ActivationFunction.Unipolar:
                     return new ActivationSigmoid();
                 case ActivationFunction.Bipolar:
-                    return null;
+                    return new ActivationTANH();
             }
             return null;
         }
@@ -70,6 +70,7 @@ namespace SN_Proj1
         public double[][] Train(double[][] trainingData, double[][] validationData)
         {
             var error = new List<double[]>();
+            PrepareNormalizerFor(validationData);
 
             var trainingSet = PrepareSet(trainingData);
             var validationSet = PrepareSet(validationData);
@@ -79,13 +80,19 @@ namespace SN_Proj1
             for (int epoch = 0; epoch < _settings.Iterations; epoch++)
             {
                 training.Iteration();
-                var errorIter = new[] { epoch, _network.CalculateError(trainingSet), _network.CalculateError(validationSet) };
+                var errorIter = new[] { epoch, training.Error, _network.CalculateError(validationSet) };
                 error.Add(errorIter);
                 Console.WriteLine($"Epoch #{epoch} TrainingError: {errorIter[1]} ValidationError: {errorIter[2]}");
             }
             training.FinishTraining();
 
             return error.ToArray();
+        }
+
+
+        private void PrepareNormalizerFor(double[][] data)
+        {
+            _normalizer = new DataNormalizer(data, 1, _settings.ActivationFunction == ActivationFunction.Unipolar ? 0 : -1);
         }
 
         private Tuple<double[][], double[][]> Split(double[][] data, double percent)
@@ -123,8 +130,6 @@ namespace SN_Proj1
 
         private BasicNeuralDataSet PrepareSet(double[][] data)
         {
-            _normalizer = new DataNormalizer(data, 1, _settings.ActivationFunction == ActivationFunction.Unipolar ? 0 : -1);
-
             // w klasyfikacji nie trzeba normalizować: dane wzorcowe w formacie: 0,1,0 - element należy do klasy 2
             var normalizedData = _normalizer.Normalize(data);
 

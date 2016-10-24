@@ -46,7 +46,7 @@ namespace SN_Proj1
 
         public double[][] Normalize(double[][] data, params int[] columns)
         {
-            if (columns.Length == 0)
+            if (columns == null || columns.Length == 0)
             {
                 return data.Select(row => row.Select(Normalize).ToArray()).ToArray();
             }
@@ -73,6 +73,11 @@ namespace SN_Proj1
 
         public double[] Denormalize(double[] input, params int[] columns)
         {
+            if (columns == null || columns.Length == 0)
+            {
+                return input.Select(Denormalize).ToArray();
+            }
+
             var result = new List<double>();
             var rowItemIndex = 0;
             for (; rowItemIndex < input.Count() && rowItemIndex < columns.Length; rowItemIndex++)
