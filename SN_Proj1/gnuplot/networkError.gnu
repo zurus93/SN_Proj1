@@ -1,6 +1,6 @@
 set ylabel "Error"
 set xlabel "Number of Weight Updates"
-set yrange [0:0.5]
+set yrange [0:0.01]
 set autoscale x
 #set autoscale
 unset colorbox

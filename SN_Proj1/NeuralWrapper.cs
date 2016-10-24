@@ -1,18 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.XPath;
 using Encog.Engine.Network.Activation;
-using Encog.MathUtil.Error;
-using Encog.ML.Data;
 using Encog.Neural.Data.Basic;
 using Encog.Neural.Networks;
 using Encog.Neural.Networks.Layers;
 using Encog.Neural.Networks.Training.Propagation.Back;
-using Encog.Neural.Networks.Training.Simple;
 
 namespace SN_Proj1
 {
@@ -89,6 +82,14 @@ namespace SN_Proj1
             return error.ToArray();
         }
 
+        private double GetNormalizationLowValue()
+        {
+            if (_settings.ActivationFunction == ActivationFunction.Bipolar)
+            {
+                return -1;
+            }
+            return 0;
+        }
 
         private void PrepareNormalizerFor(double[][] data)
         {
@@ -115,14 +116,22 @@ namespace SN_Proj1
         public double[][] Test(double[][] testData)
         {
             var normalizedData = _normalizer.Normalize(testData, Enumerable.Range(0, _inputLayerSize).ToArray());
-
-
             var result = new List<double[]>();
+            Console.WriteLine();
             foreach (var input in normalizedData)
             {
                 var output = new double[_outputLayerSize];
                 _network.Compute(input, output);
-                result.Add(_normalizer.Denormalize(output, Enumerable.Range(_inputLayerSize, output.Length).ToArray())); // Denormalize if needed
+
+                if (_settings.Type == ProblemType.Regression)
+                {
+                    result.Add(_normalizer.Denormalize(output,
+                        Enumerable.Range(_inputLayerSize, output.Length).ToArray())); // Denormalize if needed
+                }
+                else
+                {
+                    result.Add(new double[] { output.ToList().IndexOf(output.Max()) + 1 });
+                }
             }
             return result.ToArray();
         }
@@ -130,13 +139,45 @@ namespace SN_Proj1
 
         private BasicNeuralDataSet PrepareSet(double[][] data)
         {
-            // w klasyfikacji nie trzeba normalizować: dane wzorcowe w formacie: 0,1,0 - element należy do klasy 2
+            return _settings.Type == ProblemType.Regression ? PrepareRegressionSet(data) : PrepareClassificationSet(data);
+        }
+
+        private BasicNeuralDataSet PrepareRegressionSet(double[][] data)
+        {
             var normalizedData = _normalizer.Normalize(data);
 
             var input = normalizedData.Select(row => row.Take(_inputLayerSize).ToArray()).ToArray();
             var ideal = normalizedData.Select(row => row.Skip(_inputLayerSize).ToArray()).ToArray();
 
             var trainingSet = new BasicNeuralDataSet(input, ideal);
+
+            return trainingSet;
+        }
+
+        private BasicNeuralDataSet PrepareClassificationSet(double[][] data)
+        {
+            var input = data.Select(row => row.Take(_inputLayerSize).ToArray()).ToArray();
+            var idealTmp = data.Select(row => row.Skip(_inputLayerSize).ToArray()).ToArray();
+
+            var normalizedInput = _normalizer.Normalize(input);
+            var ideal = new double[idealTmp.Length][];
+
+            // Dzielimy wynik na klasy, "uaktywniając" odpowiadającą klasie kolumnę
+            for (int i = 0; i < idealTmp.Length; ++i)
+            {
+                if (_settings.ActivationFunction == ActivationFunction.Unipolar)
+                {
+                    ideal[i] = new double[_outputLayerSize];
+                }
+                else
+                {
+                    ideal[i] = Enumerable.Repeat(GetNormalizationLowValue(), _outputLayerSize).ToArray();
+                }
+                ideal[i][(int)idealTmp[i][0] - 1] = 1;
+            }
+
+            var trainingSet = new BasicNeuralDataSet(normalizedInput, ideal);
+
             return trainingSet;
         }
     }
