@@ -95,7 +95,7 @@ namespace SN_Proj1
                 new CommandLineOption {ShortNotation = 'l', LongNotation = "learning-rate", ParameterRequired = true},
                 new CommandLineOption {ShortNotation = 'm', LongNotation = "momentum", ParameterRequired = true},
                 new CommandLineOption {ShortNotation = 'd', LongNotation = "training-data", ParameterRequired = true},
-                new CommandLineOption {ShortNotation = 'v', LongNotation = "test-data", ParameterRequired = true}
+                new CommandLineOption {ShortNotation = 'o', LongNotation = "test-data", ParameterRequired = true}
             });
 
             parser.Parse(arguments);
