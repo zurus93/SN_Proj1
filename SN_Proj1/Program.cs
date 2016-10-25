@@ -8,8 +8,8 @@ namespace SN_Proj1
 {
     class Program
     {
-        private static String FILENAME = "Classification/data.simple.train.100.csv";
-        private static String TEST_FILENAME = "Classification/data.simple.test.100.csv";
+        private static String FILENAME = "Classification/data.simple.train.10000.csv";
+        private static String TEST_FILENAME = "Classification/data.simple.test.10000.csv";
 
         private static int CLUSTERS_COUNT = 3;
 
@@ -36,25 +36,32 @@ namespace SN_Proj1
 
             var result = neuralWrapper.Test(testData);
 
+
+
+            CsvHelper.Write("error.csv", error);
+            CsvHelper.Write("sortedInput.csv", SortByColumn(trainingData, 0));
+            CsvHelper.Write("output.csv", testData, result);
+
             if (settings.Type == ProblemType.Regression)
             {
-
-                CsvHelper.Write("sortedInput.csv", SortByColumn(trainingData, 0));
-                CsvHelper.Write("output.csv", testData, result);
-                CsvHelper.Write("error.csv", error);
-
-
                 new GnuplotScriptRunner(@"gnuplot/regression.gnu")
                     .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
                     .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
                     .Run();
-
-                new GnuplotScriptRunner(@"gnuplot/networkError.gnu")
-                    .AddScriptParameter("input", Path.GetFullPath("error.csv"))
-                    .Run();
-
             }
-            Console.ReadLine();
+            else
+            {
+                new GnuplotScriptRunner(@"gnuplot/classification.gnu")
+                    .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
+                    .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
+                    .Run();
+            }
+
+
+            new GnuplotScriptRunner(@"gnuplot/networkError.gnu")
+                .AddScriptParameter("input", Path.GetFullPath("error.csv"))
+                .Run();
+
         }
 
         public static int GetClastersCount(double[][] data)

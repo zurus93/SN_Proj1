@@ -58,6 +58,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="gnuplot\classification.gnu">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="gnuplot\networkError.gnu">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
