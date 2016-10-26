@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Encog.Engine.Network.Activation;
 using Encog.Neural.Networks.Training.Simple;
 
 namespace SN_Proj1
@@ -25,7 +26,10 @@ namespace SN_Proj1
             int idealSize = settings.Type == ProblemType.Regression ? 1 : GetClastersCount(trainingData);
 
             var testData = validationData.Select(x => x.Take(inputSize).ToArray()).ToArray();
-
+            if (validationData[0].Length == inputSize)
+            {
+                validationData = null;
+            }
 
 
             var neuralWrapper = new NeuralWrapper(settings, inputSize, idealSize);

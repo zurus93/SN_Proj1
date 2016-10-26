@@ -64,37 +64,48 @@ namespace SN_Proj1
         public double[][] Train(double[][] trainingData, double[][] validationData)
         {
             var error = new List<double[]>();
-            PrepareNormalizerFor(validationData);
+            PrepareNormalizerFor(trainingData, validationData);
 
             var trainingSet = PrepareSet(trainingData);
             var validationSet = PrepareSet(validationData);
 
-            var training = new Backpropagation(_network, trainingSet, _settings.LearningRate, _settings.Momentum);
+            var training = new Backpropagation(_network, trainingSet, _settings.LearningRate, _settings.Momentum)
+            {
+                BatchSize = 1
+            };
 
             for (int epoch = 0; epoch < _settings.Iterations; epoch++)
             {
                 training.Iteration();
-
-                double[] errorIter;
+                double trainingError = -1;
+                double testingError = -1;
 
                 if (_settings.Type == ProblemType.Regression)
-                    errorIter = new[] { epoch, training.Error, _network.CalculateError(validationSet) };
+                {
+                    trainingError = _network.CalculateError(trainingSet);
+                    if (validationSet != null)
+                    {
+                        testingError = _network.CalculateError(validationSet);
+                    }
+                }
                 else
                 {
-                    double trainingError = calculateClassificationError(trainingSet);
-                    double testingError = calculateClassificationError(validationSet);
-
-                    errorIter = new[] { epoch, trainingError, testingError };
+                    trainingError = CalculateClassificationError(trainingSet);
+                    if (validationSet != null)
+                    {
+                        testingError = CalculateClassificationError(validationSet);
+                    }
                 }
+                var errorIter = new[] { epoch, trainingError, testingError };
                 error.Add(errorIter);
-                Console.WriteLine($"Epoch #{epoch} TrainingError: {errorIter[1]} ValidationError: {errorIter[2]}");
+                Console.WriteLine($"Epoch #{epoch} [{training.Error}] TrainingError: {errorIter[1]} ValidationError: {errorIter[2]}");
             }
             training.FinishTraining();
 
             return error.ToArray();
         }
 
-        private double calculateClassificationError(BasicNeuralDataSet trainingSet)
+        private double CalculateClassificationError(BasicNeuralDataSet trainingSet)
         {
             int errorCount = 0;
             foreach (var trainData in trainingSet)
@@ -114,11 +125,11 @@ namespace SN_Proj1
                     }
                 }
 
-                if (ideal[maxIndex] != 1)
+                if (Math.Abs(ideal[maxIndex] - 1) > 0.0001)
                     errorCount++;
             }
 
-            return (double) errorCount / trainingSet.Count;
+            return (double)errorCount / trainingSet.Count;
         }
 
         private double GetNormalizationLowValue()
@@ -130,9 +141,20 @@ namespace SN_Proj1
             return 0;
         }
 
-        private void PrepareNormalizerFor(double[][] data)
+        private void PrepareNormalizerFor(double[][] trainingData, double[][] validationData)
         {
-            _normalizer = new DataNormalizer(data, 1, _settings.ActivationFunction == ActivationFunction.Unipolar ? 0 : -1);
+            List<double[]> dataToNormalize = new List<double[]>();
+
+            if (trainingData != null)
+            {
+                dataToNormalize.AddRange(trainingData);
+            }
+            if (validationData != null)
+            {
+                dataToNormalize.AddRange(validationData);
+            }
+
+            _normalizer = new DataNormalizer(dataToNormalize.ToArray(), 1, _settings.ActivationFunction == ActivationFunction.Unipolar ? 0 : -1);
         }
 
         private Tuple<double[][], double[][]> Split(double[][] data, double percent)
@@ -178,6 +200,8 @@ namespace SN_Proj1
 
         private BasicNeuralDataSet PrepareSet(double[][] data)
         {
+            if (data == null)
+                return null;
             return _settings.Type == ProblemType.Regression ? PrepareRegressionSet(data) : PrepareClassificationSet(data);
         }
 
@@ -204,14 +228,8 @@ namespace SN_Proj1
             // Dzielimy wynik na klasy, "uaktywniając" odpowiadającą klasie kolumnę
             for (int i = 0; i < idealTmp.Length; ++i)
             {
-                if (_settings.ActivationFunction == ActivationFunction.Unipolar)
-                {
-                    ideal[i] = new double[_outputLayerSize];
-                }
-                else
-                {
-                    ideal[i] = Enumerable.Repeat(GetNormalizationLowValue(), _outputLayerSize).ToArray();
-                }
+                ideal[i] = Enumerable.Repeat(GetNormalizationLowValue(), _outputLayerSize).ToArray();
+
                 ideal[i][(int)idealTmp[i][0] - 1] = 1;
             }
 
