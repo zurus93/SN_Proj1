@@ -6,6 +6,7 @@ using Encog.Neural.Data.Basic;
 using Encog.Neural.Networks;
 using Encog.Neural.Networks.Layers;
 using Encog.Neural.Networks.Training.Propagation.Back;
+using Encog.ML.Data;
 
 namespace SN_Proj1
 {
@@ -73,13 +74,51 @@ namespace SN_Proj1
             for (int epoch = 0; epoch < _settings.Iterations; epoch++)
             {
                 training.Iteration();
-                var errorIter = new[] { epoch, training.Error, _network.CalculateError(validationSet) };
+
+                double[] errorIter;
+
+                if (_settings.Type == ProblemType.Regression)
+                    errorIter = new[] { epoch, training.Error, _network.CalculateError(validationSet) };
+                else
+                {
+                    double trainingError = calculateClassificationError(trainingSet);
+                    double testingError = calculateClassificationError(validationSet);
+
+                    errorIter = new[] { epoch, trainingError, testingError };
+                }
                 error.Add(errorIter);
                 Console.WriteLine($"Epoch #{epoch} TrainingError: {errorIter[1]} ValidationError: {errorIter[2]}");
             }
             training.FinishTraining();
 
             return error.ToArray();
+        }
+
+        private double calculateClassificationError(BasicNeuralDataSet trainingSet)
+        {
+            int errorCount = 0;
+            foreach (var trainData in trainingSet)
+            {
+                IMLData output = _network.Compute(trainData.Input);
+                IMLData ideal = trainData.Ideal;
+
+                double maxValue = Double.MinValue;
+                int maxIndex = 0;
+
+                for (int i = 0; i < output.Count; ++i)
+                {
+                    if (maxValue < output[i])
+                    {
+                        maxValue = output[i];
+                        maxIndex = i;
+                    }
+                }
+
+                if (ideal[maxIndex] != 1)
+                    errorCount++;
+            }
+
+            return (double) errorCount / trainingSet.Count;
         }
 
         private double GetNormalizationLowValue()

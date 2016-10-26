@@ -5,6 +5,7 @@ using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using Encog.Util.CSV;
+using System.Globalization;
 
 namespace SN_Proj1
 {
@@ -61,7 +62,8 @@ namespace SN_Proj1
             for (int i = 0; i < rowCount; i++)
             {
                 var line = input[i].ToList().Concat(output[i]);
-                content.AppendLine(string.Join(",", line));
+
+                content.AppendLine(string.Join(",", line.Select(x => x.ToString(CultureInfo.InvariantCulture)).ToArray()));
             }
 
             System.IO.File.WriteAllText(path, content.ToString());
@@ -86,7 +88,7 @@ namespace SN_Proj1
 
             for (int i = 0; i < rowCount; i++)
             {
-                content.AppendLine(string.Join(",", input[i]));
+                content.AppendLine(string.Join(",", input[i].Select(x => x.ToString(CultureInfo.InvariantCulture)).ToArray()));
             }
 
             System.IO.File.WriteAllText(path, content.ToString());

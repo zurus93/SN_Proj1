@@ -8,10 +8,8 @@ namespace SN_Proj1
 {
     class Program
     {
-        private static String FILENAME = "Classification/data.simple.train.10000.csv";
-        private static String TEST_FILENAME = "Classification/data.simple.test.10000.csv";
-
-        private static int CLUSTERS_COUNT = 3;
+        private static String FILENAME = "Classification/data.three_gauss.train.10000.csv";
+        private static String TEST_FILENAME = "Classification/data.three_gauss.test.10000.csv";
 
         static void Main(string[] args)
         {
@@ -104,15 +102,23 @@ namespace SN_Proj1
             string value = null;
             if (parser.TryGet("iterations", out value))
                 settings.Iterations = int.Parse(value);
+            else
+                settings.Iterations = 200;
 
             if (parser.TryGet("momentum", out value))
                 settings.Momentum = double.Parse(value);
+            else
+                settings.Momentum = 0.3;
 
             if (parser.TryGet("learning-rate", out value))
                 settings.LearningRate = double.Parse(value);
+            else
+                settings.LearningRate = 0.07;
 
             if (parser.TryGet("bias", out value))
                 settings.HasBias = bool.Parse(value);
+            else
+                settings.HasBias = true;
 
             if (parser.TryGet("activation-function", out value))
             {
@@ -120,6 +126,8 @@ namespace SN_Proj1
                 Enum.TryParse(value, true, out tmp);
                 settings.ActivationFunction = tmp;
             }
+            else
+                settings.ActivationFunction = ActivationFunction.Unipolar;
 
             if (parser.TryGet("problem-type", out value))
             {
@@ -127,9 +135,13 @@ namespace SN_Proj1
                 Enum.TryParse(value, true, out tmp);
                 settings.Type = tmp;
             }
+            else
+                settings.Type = ProblemType.Classification;
 
             if (parser.TryGet("hidden-layers", out value))
                 settings.HiddenLayers = value.Split(',').Select(int.Parse).ToArray();
+            else
+                settings.HiddenLayers = new int[] { 40, 30 };
 
             if (parser.TryGet("training-data", out value))
                 FILENAME = value;
