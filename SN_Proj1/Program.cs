@@ -44,25 +44,32 @@ namespace SN_Proj1
             CsvHelper.Write("sortedInput.csv", SortByColumn(trainingData, 0));
             CsvHelper.Write("output.csv", testData, result);
 
-            if (settings.Type == ProblemType.Regression)
+            try
             {
-                new GnuplotScriptRunner(@"gnuplot/regression.gnu")
-                    .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
-                    .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
-                    .Run();
-            }
-            else
-            {
-                new GnuplotScriptRunner(@"gnuplot/classification.gnu")
-                    .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
-                    .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
-                    .Run();
-            }
+                if (settings.Type == ProblemType.Regression)
+                {
+                    new GnuplotScriptRunner(@"gnuplot/regression.gnu")
+                        .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
+                        .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
+                        .Run();
+                }
+                else
+                {
+                    new GnuplotScriptRunner(@"gnuplot/classification.gnu")
+                        .AddScriptParameter("trainingSet", Path.GetFullPath("sortedInput.csv"))
+                        .AddScriptParameter("testSet", Path.GetFullPath("output.csv"))
+                        .Run();
+                }
 
 
-            new GnuplotScriptRunner(@"gnuplot/networkError.gnu")
-                .AddScriptParameter("input", Path.GetFullPath("error.csv"))
-                .Run();
+                new GnuplotScriptRunner(@"gnuplot/networkError.gnu")
+                    .AddScriptParameter("input", Path.GetFullPath("error.csv"))
+                    .Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Wystąpił błąd przy generowaniu wykresów");
+            }
 
         }
 
